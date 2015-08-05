@@ -33,37 +33,63 @@ Then install the rest:
 
 Run it:
 
-	root@bbp3:/data/dbus-mqtt# ./dbus-mqtt.py
-	INFO:__main__:./dbus-mqtt.py v0.01 is starting up
-	INFO:__main__:Loglevel set to DEBUG
-	INFO:dbusmonitor:===== Search on dbus for services that we will monitor starting... =====
-	INFO:dbusmonitor:Found: com.victronenergy.battery.ttyO1 matches com.victronenergy.battery, scanning and storing items
-	INFO:dbusmonitor:       com.victronenergy.battery.ttyO1 has device instance 0
-	INFO:dbusmonitor:===== Search on dbus for services that we will monitor finished =====
-	DEBUG:__main__:our client id (and also topic) is 08002705350c
-	INFO:__main__:Starting mainloop, responding on only events
-	DEBUG:__main__:publishing on topic "/08002705350c", data "hello world!"
-	DEBUG:__main__:publishing on topic "/08002705350c", data "hello world!"
-	DEBUG:__main__:publishing on topic "/08002705350c", data "hello world!"
-	DEBUG:__main__:publishing on topic "/08002705350c", data "hello world!"
-	DEBUG:__main__:connected! client=<client.Client object at 0xb696fe6c>, userdata=None, flags={'session present': 0}, rc=0
-	DEBUG:__main__:publishing on topic "/08002705350c", data "hello world!"
-	DEBUG:__main__:publishing on topic "/08002705350c", data "hello world!"
-	DEBUG:__main__:publishing on topic "/08002705350c", data "hello world!"
-	DEBUG:__main__:publishing on topic "/08002705350c", data "hello world!"
-	DEBUG:__main__:publishing on topic "/08002705350c", data "hello world!"
+	root@bbp3:/data/dbus-mqtt# ./dbus-mqtt.py -d 
+		
+		INFO:__main__:dbus-mqtt.py v0.02 is starting up
+		INFO:__main__:Loglevel set to DEBUG
+		INFO:dbusmonitor:===== Search on dbus for services that we will monitor starting... =====
+		INFO:dbusmonitor:Found: com.victronenergy.system matches com.victronenergy.system, scanning and storing items
+		INFO:dbusmonitor:       com.victronenergy.system has device instance 0
+		INFO:dbusmonitor:Found: com.victronenergy.vebus.ttyO1 matches com.victronenergy.vebus, scanning and storing items
+		INFO:dbusmonitor:       com.victronenergy.vebus.ttyO1 has device instance 0
+		INFO:dbusmonitor:Found: com.victronenergy.settings matches com.victronenergy.settings, scanning and storing items
+		INFO:dbusmonitor:       com.victronenergy.settings has device instance 0
+		INFO:dbusmonitor:===== Search on dbus for services that we will monitor finished =====
+		DEBUG:__main__:our client id (and also topic) is 883314fc54f6
+		INFO:__main__:Starting mainloop, responding on only events
+		DEBUG:__main__:connected! client=<client.Client object at 0xb62b2950>, userdata=None, flags={'session present': 0}, rc=0
+		DEBUG:__main__:publishing on topic "/victron/Ac/Grid/L1/Power", data "-3073"
+		DEBUG:__main__:publishing on topic "/victron/Ac/ActiveIn/L1/I", data "-13.6999998093"
+		DEBUG:__main__:publishing on topic "/victron/Ac/ActiveIn/L1/P", data "-2896"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Out/L1/I", data "-14.0"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Out/L1/P", data "-2917"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Grid/L1/Power", data "-2896"
+		DEBUG:__main__:publishing on topic "/victron/Ac/ActiveIn/L1/V", data "229.259994507"
+		DEBUG:__main__:publishing on topic "/victron/Ac/ActiveIn/L1/I", data "-12.6000003815"
+		DEBUG:__main__:publishing on topic "/victron/Ac/ActiveIn/L1/P", data "-2624"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Out/L1/V", data "229.259994507"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Out/L1/I", data "-12.8999996185"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Out/L1/P", data "-2645"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Grid/L1/Power", data "-2624"
+		DEBUG:__main__:publishing on topic "/victron/Ac/ActiveIn/L1/I", data "-12.0399999619"
+		DEBUG:__main__:publishing on topic "/victron/Ac/ActiveIn/L1/P", data "-2461"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Out/L1/I", data "-12.3400001526"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Out/L1/P", data "-2482"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Grid/L1/Power", data "-2461"
+		DEBUG:__main__:publishing on topic "/victron/Ac/ActiveIn/L1/I", data "-12.1199998856"
+		DEBUG:__main__:publishing on topic "/victron/Ac/ActiveIn/L1/P", data "-2444"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Out/L1/I", data "-12.4200000763"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Out/L1/P", data "-2465"
+		DEBUG:__main__:publishing on topic "/victron/Ac/Grid/L1/Power", data "-2444"
+
 
 And this in another one (make sure to change the client id with yours, see above):
 
-	$ mosquitto_sub -h test.mosquitto.org -t "/08002705350c" -v
-	/08002705350c hello world!
-	/08002705350c hello world!
-	/08002705350c hello world!
-	/08002705350c hello world!
-	/08002705350c hello world!
-	/08002705350c hello world!
-	/08002705350c hello world!
-	/08002705350c hello world!
+	$ mosquitto_sub -h test.mosquitto.org -t "/victron/#" -v
+	/victron/Ac/ActiveIn/L1/P -485
+	/victron/Ac/Out/L1/P -506
+	/victron/Ac/Grid/L1/Power -485
+	/victron/Ac/ActiveIn/L1/P -493
+	/victron/Ac/Out/L1/P -514
+	/victron/Ac/Out/L1/F 50.1534500122
+	/victron/Ac/Grid/L1/Power -493
+	/victron/Ac/ActiveIn/L1/P -492
+	/victron/Ac/Out/L1/P -513
+	/victron/Ac/Out/L1/F 50.0255126953
+	/victron/Ac/Grid/L1/Power -492
+	/victron/Ac/ActiveIn/L1/I -3.42000007629
+	/victron/Ac/Out/L1/I -3.70000004768
+	/victron/Ac/Out/L1/F 50.1534500122
 
 In case you do not see those hello worlds comming, it is perhaps because you didn't completely follow these
 instructions, and chose to run dbus-mqtt on a PC instead of a CCGX? No problem, to make something happen on
