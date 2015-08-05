@@ -26,7 +26,10 @@ from ve_utils import get_vrm_portal_id, exit_on_error
 
 import client as mqtt
 
-softwareversion = '0.01'
+softwareversion = '0.02'
+# Mqtt sever details
+mqtt_host = "test.mosquitto.org"
+mqtt_port = 1883
 
 # The DataUpdateSender class receives all the dbus-dataupdate-events, and forwards them to mqtt
 # if and when necessary.
@@ -34,25 +37,12 @@ class DbusMqtt:
 	def __init__(self):
 		d = DbusMonitor(datalist.vrmtree, self._value_changed_on_dbus)
 
-		"""
-		self.ttl = 300    # seconds to keep sending the updates.  If no keepAlive received in this
-						  # time - stop sending
-
-		self.lastKeepAliveRcd = int(time.time()) - self.ttl   # initialised to when this code launches
-		"""
-
-		self.ttm = 2      # seconds to gather data before sending, 0 - send immediate, NN - gather
-						  # for NN seconds
-		self._last_publish = int(time.time() - 60)  # Just an initialisation value, so the first
-											   # ttm timeout is _now_
-		self._gathered_data_timer = None
-		self._gathered_data = {}
-
+		
 		self._mqtt = mqtt.Client(client_id=get_vrm_portal_id(), clean_session=True, userdata=None)
 		self._mqtt.loop_start()  # creates new thread and runs Mqtt.loop_forever() in it.
 		self._mqtt.on_connect = self._on_connect
 		self._mqtt.on_message = self._on_message
-		self._mqtt.connect_async('test.mosquitto.org', port=1883, keepalive=60, bind_address="")
+		self._mqtt.connect_async(mqtt_host, port=mqtt_port, keepalive=60, bind_address="")
 		logger.debug('our client id (and also topic) is %s' % get_vrm_portal_id())
 
 	#   servicename: for example com.victronenergy.dbus.ttyO1
@@ -61,24 +51,8 @@ class DbusMqtt:
 	#   changes: the changes, a tuple with GetText() and GetValue()
 	#   instance: the deviceInstance
 	def _value_changed_on_dbus(self, servicename, path, props, changes, instance):
-		# if not self.someone_watching():
-		# 	return
-
-		self._gathered_data[props["code"] + str(instance)] = {
-			'code': props["code"], 'instance': instance, 'value': str(changes['Value'])}
-
-		if self.ttm:     # != 0, ie. gather before sending
-			if self._marshall_says_go():
-				self._publish()
-			elif self._gathered_data_timer is None:
-				# Set timer, to make sure that this data will not reside in this queue for longer
-				# than ttm-time
-				self._gathered_data_timer = gobject.timeout_add(
-					self.ttm * 1000,
-					exit_on_error, self._publish)
-
-		else:       # send immediate
-			self._publish()
+		
+		self._publish(path,changes['Value'])
 
 	def _on_message(self, client, userdata, msg):
 		logger.debug('message! userdata: %s, message %s' % (userdata, msg.topic+" "+str(msg.payload)))
@@ -106,45 +80,41 @@ class DbusMqtt:
 	def _marshall_says_go(self):
 		return (self._last_publish + self.ttm) < int(time.time())
 
-	def _publish(self):
-		self._last_publish = int(time.time())
-
-		"""
-		message = {'dataUpdate': self.gatheredData.values()}
-		self.gatheredData = {}
-
-
-		if self.gatheredDataTimer is not None:
-			gobject.source_remove(self.gatheredDataTimer)
-			self.gatheredDataTimer = None
-
-		logger.debug("Sending dataUpdate, fired by timer is %s" % firedbytimer)
-
-		send_to_pubnub('livefeed', message)
-		return False    # let gobject know that it is not necessary to fire us again.
-		"""
-		topic = '/' + get_vrm_portal_id()
-		payload = 'hello world!'
+	def _publish(self,topic,value):
+		
+		topic = '/victron' + topic
+		payload = value
 		logger.debug('publishing on topic "%s", data "%s"' % (topic, payload))
 
 		self._mqtt.publish(topic, payload=payload, qos=0, retain=False)
 
 def main():
+	global mqtt_host
+	global mqtt_port
 	# Argument parsing
 	parser = argparse.ArgumentParser(
-		description='vrmpubnub v%s: two-way comms between user and the D-Bus on the CCGX.' % softwareversion
+		description='vrmmqttpub v%s: Mqtt publisher of D-Bus on the CCGX.' % softwareversion
 	)
 
 	parser.add_argument("-d", "--debug", help="set logging level to debug",
 						action="store_true")
 
-	# parser.add_argument("-n", "--nosecurity", help="no AES encryption and no random channelnames",
-	#					action="store_true")
+	parser.add_argument("-s", "--server", help='Mqtt Server, Default: %s ' % mqtt_host)
+	parser.add_argument("-p", "--port", help="Mqtt Port, Default:  %s" % mqtt_port)
 
+	
 	args = parser.parse_args()
 
 	# Init logging
-	logging.basicConfig(level=(logging.DEBUG if True or args.debug else logging.INFO))
+	logging.basicConfig(level=(logging.DEBUG if args.debug else logging.INFO))
+	
+	if args.server:
+		mqtt_host = args.server
+    		logger.debug("Host: %s"%mqtt_host)
+	if args.port:
+		mqtt_port = args.port		    		
+		logger.debug("Port: %s"%mqtt_port)	
+
 
 	logger.info("%s v%s is starting up" % (__file__, softwareversion))
 	logLevel = {0: 'NOTSET', 10: 'DEBUG', 20: 'INFO', 30: 'WARNING', 40: 'ERROR'}
@@ -153,9 +123,6 @@ def main():
 	# Have a mainloop, so we can send/receive asynchronous calls to and from dbus
 	DBusGMainLoop(set_as_default=True)
 
-	# Without this, the threads on wich the Pubnub.subscribe() functions only
-	# work when there is activity on the dbus.
-	# gobject.threads_init()
 	dbusmqtt = DbusMqtt()
 
 	# Start and run the mainloop
